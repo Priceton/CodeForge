@@ -37,6 +37,9 @@ void sub(int num1[], int num2[], int num3[]){
 
 //************************************************************
 //O(n^2)
+void multiple(int num1[], int num2[], int num4[]){
+    ....num3 --> num4
+}
 void multiple(int num1[], int num2[], int num3[]){
     for(int i = 0; i < N * 2; ++i)//size of num3 is twice of num1 and num2
         num3[i] = 0;
