@@ -9,6 +9,7 @@ struct TreeNode{
     int val;
     TreeNode *lchild, *rchild;
     TreeNode(int x) : val(x), lchild(NULL), rchild(NULL){}
+    TreeNode(TreeNode *l = NULL, TreeNode *r = NULL): lchild(l), rchild(r){}
 };
 
 TreeNode* createTree(){
@@ -25,6 +26,7 @@ TreeNode* createTree(){
     return T;
 }
 
+//************************************************************
 //1 while
 void preOrder(TreeNode *root){
     if(root == NULL) return ;
@@ -162,6 +164,17 @@ bool searchBST(TreeNode *root, int target){
 }
 
 //************************************************************
+TreeNode* createBST(){
+    TreeNode *root = NULL;
+    int data;
+    while(cin>>data){
+        TreeNode *t = new TreeNode(data);
+        insertBST(root, t);
+    }
+    return root;
+}
+
+//************************************************************
 //iterative
 //remember this instead of above
 TreeNode* searchBSTIterative(TreeNode *root, int val){
@@ -207,20 +220,75 @@ bool insertBSTIterative(TreeNode *&root, int val){
 }
 
 //************************************************************
+//Given two values, print all the keys in Balanced Search Tree in the range in increasing order
+void searchRangeInBSTHelper(TreeNode *root, vector<int> &result, int &low, int &high){
+    if(root == NULL) return;
+
+    if(root->val >= low && root->val <= high){
+        searchRangeInBSTHelper(root->lchild, result, low, high);
+        result.push_back(root->val);
+        searchRangeInBSTHelper(root->rchild, result, low, high);
+    }else if(root->val > high){
+        searchRangeInBSTHelper(root->lchild, result, low, high);
+    }else if(root->val < low){
+        searchRangeInBSTHelper(root->rchild, result, low, high);
+    }
+}
+
+vector<int> searchRangeInBST(TreeNode *root, int low, int high){
+    vector<int> result;
+    if(root == NULL) return result;
+
+    searchRangeInBSTHelper(root, result, low, high);
+    return result;
+}
+
+//************************************************************
+//You need to find the inorder successor and predecessor of a given key.
+//In case the given key is not found in BST,
+//then return the two values within which this key will lie.
+//Following is the algorithm to reach the desired result. Its a recursive method:
+void findPrevSuc(TreeNode *root, TreeNode *&prev, TreeNode *&suc, int key){
+    if(root == NULL) return ;
+
+    if(root->val == key){
+        if(root->lchild != NULL){
+            TreeNode *tmp = root->lchild;
+            while(tmp->lchild != NULL)
+                tmp = tmp->lchild;
+            prev = tmp;
+        }
+
+        if(root->rchild != NULL){
+            TreeNode *tmp = root->rchild;
+            while(tmp->rchild != NULL)
+                tmp = tmp->rchild;
+            suc = tmp;
+        }
+    }else if(root->val > key){//go left
+        suc = root;
+        findPrevSuc(root->lchild, prev, suc, key);
+    }else{//go right
+        prev = root;
+        findPrevSuc(root->rchild, prev, suc, key);
+    }
+}
+
+//************************************************************
 bool delNode(TreeNode *&node){
-    TreeNode *par, *tmp;
+    TreeNode *par;
     if(node->rchild == NULL){
         par = node; node = node->lchild;free(par);
     }else if(node->lchild == NULL){
         par = node; node = node->rchild; free(par);
-    }else{//leaf node
+    }else{//internal node
         par = node;
         TreeNode *tmp = node->lchild;
         while(tmp->rchild != NULL){
-            par = tmp;
+            par = tmp;//update parent
             tmp = tmp->rchild;
         }
-        node->val = tmp->val;
+        node->val = tmp->val;//replace
         if(par == node){
             par->lchild = tmp->lchild;
         }else{
@@ -241,17 +309,6 @@ bool delBST(TreeNode *&root, int val){
     }else{
         return delNode(root);
     }
-}
-
-//************************************************************
-TreeNode* createBST(){
-    TreeNode *root = NULL;
-    int data;
-    while(cin>>data){
-        TreeNode *t = new TreeNode(data);
-        insertBST(root, t);
-    }
-    return root;
 }
 
 //************************************************************
@@ -341,6 +398,27 @@ bool isSymmetricTree(TreeNode *root){
     if(root == NULL) return true;
     else return isSymmetricTree(root->lchild, root->rchild);
 }
+
+//************************************************************
+//破坏原来的树
+TreeNode* getSymmetricTree(TreeNode *&root){
+    if(root == NULL) return root;
+
+    TreeNode *l = getSymmetricTree(root->lchild);
+    TreeNode *r = getSymmetricTree(root->rchild);
+    root->lchild = r;
+    root->rchild = l;
+    return root;
+}
+//不破坏原来的树
+TreeNode* getSymmetricTree2(TreeNode *root){
+    if(root == NULL) return root;
+
+    TreeNode *rootCopy = new TreeNode(root->val);
+    rootCopy->lchild = getSymmetricTree2(rootCopy->rchild);
+    rootCopy->rchild = getSymmetricTree2(rootCopy->lchild);
+    return rootCopy;
+}
 //************************************************************
 void destroyTree(TreeNode *root){
     if(root == NULL)
@@ -350,69 +428,214 @@ void destroyTree(TreeNode *root){
     delete root;
 }
 
+///////////////////////////advanced//////////////////////////
+//************************************************************
+//完全二叉树
+bool isCompleteTree(TreeNode *root){
+    if(root == NULL) return true;
+
+    queue<TreeNode*> que;
+    TreeNode *p = root;
+    que.push(p);
+    bool see_unfull = false;
+    while(!que.empty()){
+        p = que.front();
+        que.pop();
+
+        //left
+        if(p->lchild != NULL){
+            if(see_unfull) return false;
+            else que.push(p->lchild);
+        }else{
+            see_unfull = true;
+        }
+        //right
+        if(p->rchild != NULL){
+            if(see_unfull) return false;
+            else que.push(p->rchild);
+        }else{
+            see_unfull = true;
+        }
+    }
+    return true;
+}
+
+//https://oj.leetcode.com/problems/flatten-binary-tree-to-linked-list/
+//not in ordered
+void flatten(TreeNode *root){
+    if(root == NULL) return;
+
+    flatten(root->lchild);
+    flatten(root->rchild);
+
+    //flatten process
+    if(root->lchild != NULL){
+        TreeNode *tmp = root->lchild;
+        while(tmp->rchild != NULL)
+            tmp = tmp->rchild;
+
+        tmp->rchild = root->rchild;
+        root->rchild = tmp;
+        root->lchild = NULL;
+    }
+}
+
+//http://www.cnblogs.com/remlostime/archive/2012/10/29/2745300.html
+//convert BST to double linked list
+TreeNode convert(TreeNode *root){
+    if(root == NULL){
+        return TreeNode();
+    }
+
+    //flatten process
+    TreeNode ltree = convert(root->lchild);
+    TreeNode rtree = convert(root->rchild);
+    root->lchild = ltree.rchild;//left
+    if(ltree.rchild != NULL)
+        ltree.rchild->rchild = root;
+
+    root->rchild = rtree.lchild;//right
+    if(rtree.lchild != NULL)
+        rtree.lchild->lchild = root;
+
+    //as whole
+    TreeNode *l = ltree.lchild == NULL ? root : ltree.lchild;
+    TreeNode *r = rtree.rchild == NULL ? root : rtree.rchild;
+    return TreeNode(l, r);
+}
+
+TreeNode* convert2DoubleList(TreeNode *root){
+    TreeNode ret = convert(root);
+    return ret.lchild;
+}
+
+//test program
+// TreeNode *bst = createBST();
+// TreeNode *h = convert2DoubleList(bst);
+// while(h != NULL){
+//     cout<<h->val <<" ";
+//     h = h->rchild;
+//  }
+// cout<<endl;
+
+//************************************************************
+//find the first common ancestor of two nodes
+bool isFather(TreeNode *f, TreeNode *s){
+    if(f == NULL) return false;
+    else if(f == s) return true;
+    else return isFather(f->lchild, s) || isFather(f->rchild, s);
+}
+
+void commonAncestor(TreeNode *root, TreeNode *n1, TreeNode *n2, TreeNode *&ans){
+    if(root == NULL || n1 == NULL || n2 == NULL) return ;
+
+    if(isFather(root, n1) && isFather(root, n2)){
+        ans = root;
+        commonAncestor(root->lchild, n1, n2, ans);
+        commonAncestor(root->rchild, n1, n2, ans);
+    }
+}
+
+//************************************************************
+//树中两节点间的最大距离
+
+
+//************************************************************
+//build tree from preorder and inorder
+TreeNode* build(vector<int> &preorder, int pl, int pr,
+                vector<int> &inorder, int il, int ir){
+    TreeNode *root;
+    if(pl > pr || il > ir){
+        root = NULL;
+    }else {
+        root = new TreeNode(preorder[pl]);
+        int i;
+        for(i = il; i <= ir && inorder[i] != root->val; ++i)
+            ;
+        root->lchild = build(preorder, pl + 1, pl + i - il, inorder, il, i - 1);
+        root->rchild = build(preorder, pl + i - il + 1, pr, inorder, i + 1, ir);
+    }
+    return root;
+}
+
+TreeNode* buildTree(vector<int> &preorder, vector<int> &inorder){
+    return build(preorder, 0, preorder.size() - 1,
+                 inorder, 0, inorder.size() - 1);
+}
+
+//************************************************************
+//build tree from inorder and postorder
+TreeNode* build2(vector<int> &inorder, int il, int ir,
+                 vector<int> &postorder, int pl, int pr){
+    TreeNode *root;
+    if(il > ir || pl > pr){
+        root = NULL;
+    }else{
+        root = new TreeNode(postorder[pr]);
+        int i;
+        for(i = il; i <= ir && inorder[i] != root->val; ++i)
+            ;
+        root->lchild = build(inorder, il, i - 1, postorder, pl, i - il + pl - 1);
+        root->rchild = build(inorder, i + 1, ir, postorder, i - il + pl, pr - 1);
+    }
+    return root;
+}
+
+
+//************************************************************
+/*
+ *  * 12. 求二叉树中节点的最大距离：getMaxDistanceRec
+ *
+ *  首先我们来定义这个距离：
+ *  距离定义为：两个节点间边的数目.
+ *  如：
+ *     1
+ *    / \
+ *   2   3
+ *        \
+ *         4
+ *   这里最大距离定义为2，4的距离，为3.
+ * 求二叉树中节点的最大距离 即二叉树中相距最远的两个节点之间的距离。 (distance / diameter)
+ * 递归解法：
+ * 返回值设计：
+ * 返回1. 深度， 2. 当前树的最长距离
+ * (1) 计算左子树的深度，右子树深度，左子树独立的链条长度，右子树独立的链条长度
+ * (2) 最大长度为三者之最：
+ *    a. 通过根节点的链，为左右深度+2
+ *    b. 左子树独立链
+ *    c. 右子树独立链。
+ *
+ * (3)递归初始条件：
+ *   当root == null, depth = -1.maxDistance = -1;
+ */
+struct Result{
+    int maxDist;
+    int depth;
+    Result(int dist = -1, int depth = -1) : maxDist(dist), depth(depth){}
+};
+
+Result getMaxDistHelper(TreeNode *root){
+    Result res;
+    if(root == NULL) return res;
+
+    Result l = getMaxDistHelper(root->lchild);
+    Result r = getMaxDistHelper(root->rchild);
+    res.depth = max(l.depth, r.depth) + 1;//1.update depth
+
+    int cross = l.depth + 1 + r.depth + 1;//对于一个跨点的路径，跟左右的最大深度有关
+    res.maxDist = max(cross, max(l.maxDist, r.maxDist));//2.update max dist
+    return res;
+}
+
+int getMaxDist(TreeNode *root){
+    return getMaxDistHelper(root).maxDist;
+}
+
+//************************************************************
+
 int main()
 {
-    ifstream in;
-    in.open("input.txt");
-    streambuf *old_cin = cin.rdbuf();
-    cin.rdbuf(in.rdbuf());
-    TreeNode *root = createTree();
-    cout<<"preOrder: ";
-    preOrder(root);
-    cout<<endl;
-
-    cout<<"inOrder: ";
-    inOrder(root);
-    cout<<endl;
-
-    cout<<"postOrder: ";
-    postOrder(root);
-    cout<<endl;
-
-    cout<<"levelOrder: "<<endl;
-    levelOrder(root);
-
-    cout<<"dfs: ";
-    dfs(root);
-    cout<<endl;
-
-    cout<<"bfs: ";
-    bfs(root);
-    cout<<endl;
-
-    in.close();
-
-    //test for BST
-    ifstream bst_in;
-    bst_in.open("bst_in.txt");
-    cin.rdbuf(bst_in.rdbuf());
-    cout<<endl;
     TreeNode *bst = createBST();
-    cout<<"bst levleOrder: " <<endl;
-    levelOrder(bst);
-    cout<<endl <<searchBST(bst, 10) <<endl;
-    cout<<searchBST(bst, 5) <<endl;
-    bst_in.close();
-
-    //test for iterative BST
-    cout<<"insert BST iterative" <<endl;
-    ifstream bst_in2;
-    bst_in2.open("bst_in.txt");
-    cin.rdbuf(bst_in2.rdbuf());
-
-    TreeNode *r = NULL;
-    int tmp;
-    while(cin>>tmp){
-        insertBSTIterative(r, tmp);
-    }
-    cout<<endl;
-    cout<<"levelOrder:" <<endl;
-    levelOrder(r);
-
-    delBST(r, 0);
-    cout<<"levelOrder:" <<endl;
-    levelOrder(r);
-    bst_in2.close();
+    cout<<getMaxDist(bst) <<endl;
     return 0;
-
 }

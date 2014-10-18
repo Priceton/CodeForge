@@ -1,11 +1,101 @@
 #include <iostream>
 #include <cstdio>
 #include <vector>
+#include <set>
 #include <stack>
 #include <algorithm>
 #include <unordered_map>
 #include <string>
+#include <map>
+
 using namespace std;
+
+//************************************************************
+//Union and Intersection of two sorted arrays
+//http://www.geeksforgeeks.org/union-and-intersection-of-two-sorted-arrays-2/
+vector<int> findUnion(int arr1[], int m, int arr2[], int n){
+    vector<int> result;
+    int i = 0, j = 0;
+    while(i < m && j < n){
+        if(arr1[i] < arr2[j]) result.push_back(arr1[i++]);
+        else if(arr1[i] > arr2[j]) result.push_back(arr2[j++]);
+        else{
+            result.push_back(arr1[i]);
+            i++, j++;
+        }
+    }
+
+    while(i < m) result.push_back(arr1[i++]);
+    while(j < n) result.push_back(arr2[j++]);
+    return result;
+}
+
+vector<int> findIntersection(int arr1[], int m, int arr2[], int n){
+    vector<int> result;
+    int i = 0, j = 0;
+    while(i < m && j < n){
+        if(arr1[i] < arr2[j]) i++;
+        else if(arr1[i] > arr2[j]) j++;
+        else{
+            result.push_back(arr1[i]);
+            i++, j++;
+        }
+    }
+    return result;
+}
+
+//Union and Intersection of three sorted arrays
+//http://www.geeksforgeeks.org/union-and-intersection-of-two-sorted-arrays-2/
+set<int> findUnion3(int arr1[], int n1, int arr2[], int n2, int arr3[], int n3){
+    set<int> result;
+    for(int i = 0; i < n1; ++i) result.insert(arr1[i]);
+    for(int i = 0; i < n2; ++i) result.insert(arr2[i]);
+    for(int i = 0; i < n3; ++i) result.insert(arr3[i]);
+    return result;
+}
+
+vector<int> findIntersection3(int arr1[], int n1, int arr2[], int n2, int arr3[], int n3){
+    vector<int> result;
+    int i = 0, j = 0, k = 0;
+    while(i < n1 && j < n2 && k < n3){
+        if(arr1[i] == arr2[j] && arr2[j] == arr3[k]) {
+            result.push_back(arr1[i]);
+            i++, j++, k++;
+        }else if(arr1[i] < arr2[j]){
+            i++;
+        }else if(arr2[j] < arr3[k]){
+            j++;
+        }else{
+            k++;
+        }
+    }
+    return result;
+}
+
+//************************************************************
+bool isPrim(int n){
+    if(n <= 1) return false;
+
+    for(int i = 2; i * i <= n; ++i){
+        if(n % i == 0) return false;
+    }
+    return true;
+}
+
+//************************************************************
+//筛数法，求N以内的所有素数, n > 2;
+vector<int> getAllPrim(int n){
+    vector<int> res;
+
+    vector<bool> isPrime(n + 1, false);
+    for(int i = 2; i * i <= n; ++i){
+        for(int j = 1; j * i <= n; ++j){
+            if(isPrime[j * i] && (n % (j * i) == 0))
+                isPrime[j * i] = true;
+        }//end for j
+    }//end for i
+
+}
 
 //************************************************************
 //分解质因数，1既不是质数也不是合数
@@ -60,7 +150,7 @@ string longestRepeatSubstring(string &str){
 //波兰表达式:前缀表达式；逆波兰表达式:后缀表达式
 
 /*1.中缀表达式求值，先中缀转后缀，基于后缀表达式计算值
-  使用两个栈，操作符栈，操作数栈，从左往右扫描表达式，遇到操作数直接压入操作数栈，遇到操作符，跟操作符栈栈顶元素比较优先级，当且仅当当前操作符比栈顶大的时候，直接压栈(如果小于或者等于栈顶元素，则弹出栈顶元素，将其压入操作数栈)，优先级(乘除 > 加减 > 等号),等号优先级最低 */
+  使用两个栈，操作符栈，操作数栈，从左往右扫描表达式，遇到操作数直接压入操作数栈，遇到操作符，跟操作符栈栈顶元素比较优先级，当且仅当当前操作符比栈顶小的时候，直接压栈(如果大于或者等于栈顶元素，则弹出栈顶元素，将其压入操作数栈，类似保持金字塔形式)，优先级(乘除 > 加减 > 等号),等号优先级最低 */
 
 /*2.将一个 逆波兰式(后缀表达式) 转回 中缀表达式 的算法：
   这个就相当简单了，就是一个机械的入堆栈出堆栈的操作，
@@ -74,6 +164,39 @@ string longestRepeatSubstring(string &str){
   表达式树特点，操作数必定在叶节点，操作符必定在内部节点。
   过程：选最后一个计算的符号，放在根节点，该运算符的左半部分放在左子树，有半部分放在由子树，递归直至结束
 */
+
+vector<string> inToPost(vector<string> &expression){
+    vector<string> post;
+    if(expression.empty()) return post;
+
+    map<char, int> cache;
+    cache['+'] = 0;
+    cache['-'] = 0;
+    cache['*'] = 1;
+    cache['/'] = 1;
+
+    stack<char> oper;
+    stack<int> opnd;
+    for(int i = 0; i < (int)expression.size(); ++i){
+        string tmp = expression[i];
+        if(tmp.size() == 1 && tmp[0] == '+' && tmp[0] == '-'
+           && tmp[0] == '*' && tmp[0] == '/'){
+            while(!oper.empty()){
+                if(cache[tmp[0]] < cache[oper.top()])
+                    break;
+
+                string op;
+                op[0] = tmp[0];//char to string
+                post.push_back(op);
+                oper.pop();
+            }
+            oper.push(tmp[0]);
+        }else{
+            post.push_back(expression[i]);
+        }
+    }//end for
+    return post;
+}
 
 //************************************************************
 //正负交替
@@ -89,6 +212,7 @@ void rearrange(int *a, int n){
 
 //************************************************************
 //实现引用计数类，见隔壁的文件ReferenceCount.cpp
+
 
 //************************************************************
 //题目是这样的，两个长度相等的字符串，每个字符串中删掉一个字符，剩下的字符顺序不变，如果这样操作后得到的两个结果相同，就说是原来的两个字符串是相似的，实现函数
@@ -329,12 +453,23 @@ SingletonNest* SingletonNest::instance = NULL;
 //     }
 // };
 //************************************************************
-
+void printSet(set<int> &array){
+    for(auto it = array.begin(); it != array.end(); ++it){
+        cout<<*it<<" ";
+    }
+    cout<<endl;
+}
 
 int main()
 {
-    prim(33);
-    cout<<"**" <<endl;
-    prim_recur(33, 2);
+    int ar1[] = {1, 5, 10, 20, 40, 80};
+    int ar2[] = {6, 7, 20, 80, 100};
+    int ar3[] = {3, 4, 15, 20, 30, 70, 80, 120};
+    int n1 = sizeof(ar1)/sizeof(ar1[0]);
+    int n2 = sizeof(ar2)/sizeof(ar2[0]);
+    int n3 = sizeof(ar3)/sizeof(ar3[0]);
+
+    set<int> res_union = findUnion3(ar1, n1, ar2, n2, ar3, n3);
+    printSet(res_union);
     return 0;
 }
